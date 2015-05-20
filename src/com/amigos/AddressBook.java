@@ -1,6 +1,6 @@
 package com.amigos;
 
-import java.io.File;
+import java.io.*;
 import java.util.*;
 
 import com.utilidades.diegordonez.*;
@@ -20,12 +20,17 @@ public class AddressBook {
 		String nameNewFriend = Utilidades.readString();
 		System.out.print("Teléfono: ");
 		int newPhoneNumber = Utilidades.readInt();
+		System.out.print("Dirección: ");
+		String newAddress = Utilidades.readString();
+		Utilidades.flush();
 
 		// Create new Objecto of Friend Class
-		Friend createdFriend = new Friend(nameNewFriend, newPhoneNumber);
+		Friend createdFriend = new Friend(nameNewFriend, newPhoneNumber,
+				newAddress);
 		return createdFriend;
 	}
 
+	// TODO ASK teacher about this type of search
 	private static int sortFriend(ArrayList<Friend> addresBook,
 			String friendName) {
 
@@ -38,6 +43,29 @@ public class AddressBook {
 		}
 
 		return isFriend;
+	}
+
+	private static void showFriend(ArrayList<Friend> addresBook,
+			String friendName) {
+
+		int indexOfFriend = sortFriend(addresBook, friendName);
+
+		if (indexOfFriend >= 0) {
+			addresBook.get(indexOfFriend).toString();
+		} else {
+			System.out.println("Contacto: " + friendName + " inexistente!");
+		}
+
+	}
+
+	private static void showAllFriends(ArrayList<Friend> addresBook) {
+		if (addresBook.isEmpty()) {
+			System.out.println("Agenda vacia!");
+		} else {
+			for (Friend friend : addresBook) {
+				System.out.println(friend.toString());
+			}
+		}
 	}
 
 	private static void editFriend(String friendName,
@@ -99,68 +127,180 @@ public class AddressBook {
 		}
 	}
 
-	private static void generateAddresBookFile(ArrayList<Friend> addrBook) {
+	private static void exportAddresBookFile(ArrayList<Friend> addrBook) {
 
-		System.out.print("Introduzca PATH de salida: ");
-		String outputPATH = Utilidades.readString();
-		Utilidades.flush();
+		ObjectOutputStream outputWriter = null;
+		FileOutputStream outputFile = null;
 
-		File addBr = Utilidades.createFile(outputPATH.concat("/agenda.txt"));
+		// Ask for name of output File
+		System.out.print("Introduzca el nombre de salida para la agendia: ");
+		String fileName = Utilidades.readString();
 
-		for (Friend friend : addrBook) {
-			Utilidades.write(addBr, friend.getName());
-			Utilidades.write(addBr, Integer.toString(friend.getPhoneNumber()));
-			System.out.println();
-			Utilidades.separator('*');
+		try {
+			outputFile = new FileOutputStream(fileName);
+			outputWriter = new ObjectOutputStream(outputFile);
+			for (Friend friend : addrBook) {
+				// For each object in array write a new entry in Object File
+				outputWriter.writeObject(friend);
+			}
+		} catch (Exception e) {
+			System.err.println("Error de escritura en el fichero!");
+		} finally {
+			try {
+				outputFile.close();
+			} catch (Exception e2) {
+				System.err.println("Imposible cerrar escritor de objetos");
+			}
 		}
 
 	}
 
+	private static ArrayList<Friend> importAddresBookFile(
+			FileInputStream addresBookFile) {
+
+		ArrayList<Friend> readArrayFromFile = new ArrayList<>();
+
+		// Create new reader
+		ObjectInputStream reader = null;
+		try {
+
+			reader = new ObjectInputStream(addresBookFile);
+
+			// While it exists some Object in File continues reading
+			// Create a temporal object to cast
+
+			Friend tmpFriend;
+
+			while (addresBookFile.available() > 0) {
+				tmpFriend = (Friend) reader.readObject();
+				readArrayFromFile.add(tmpFriend);
+			}
+		} catch (Exception e) {
+			System.err.println("Imposible leer el fichero introducido");
+		} finally {
+			try {
+				reader.close();
+			} catch (Exception e2) {
+				System.err.println("Imposible cerrar el lector de objetos");
+			}
+		}
+
+		return readArrayFromFile;
+	}
+
 	public static void main(String[] args) {
 
-		ArrayList<Friend> addresBookArray = new ArrayList<>();
+		ArrayList<Friend> addressBookArrayOUT = new ArrayList<>();
+		ArrayList<Friend> addressBookArrayIN = new ArrayList<>();
 
 		boolean leave = false;
 
 		do {
 
+			Utilidades.separator('*');
 			System.out.println("Agenda de amigos");
 			System.out.println("1.Nuevo contacto");
-			System.out.println("2.Editar contacto");
-			System.out.println("3.Borrar contacto");
-			System.out.println("4.Agenda --> .txt");
-			System.out.println("5.Salir");
+			System.out.println("2.Mostrar contacto");
+			System.out.println("3.Cantidad de contactos");
+			System.out.println("4.Mostrar todos los contactos");
+			System.out.println("5.Editar contacto");
+			System.out.println("6.Borrar contacto");
+			System.out.println("7.Exportar agenda");
+			System.out.println("8.Importar agenda");
+			System.out.println("0.Salir");
 			Utilidades.separator('*');
 			System.out.println();
 			System.out.print("Opción: ");
 			int selection = Utilidades.readInt();
 
 			switch (selection) {
-			case 1:
-
-				// adding new contact to the main arrayList
-				addresBookArray.add(newFriend());
-				break;
-			case 2:
-
-				// Sort in the main ArrayList if the given contact exists or no
-				// If it exists, then modify with the new information
-				actionMenu("Editar", addresBookArray);
-				editFriend(Utilidades.readString(), addresBookArray);
-
-				break;
-			case 3:
-				actionMenu("borrar", addresBookArray);
-				deleteFriend(Utilidades.readString(), addresBookArray);
-				break;
-			case 4:
-				Utilidades.showInfo("Generar txt");
-				generateAddresBookFile(addresBookArray);
-				break;
-			case 5:
+			case 0:
 				Utilidades.showInfo("Fin del programa!");
 				leave = true;
 				break;
+			case 1:
+
+				// adding new contact to the main arrayList
+				addressBookArrayOUT.add(newFriend());
+				break;
+			case 2:
+
+				// Showing a contact if it exists
+				actionMenu("mostrar", addressBookArrayOUT);
+				System.out.print("Introduzca nombre de amigo a mostrar: ");
+				showFriend(addressBookArrayOUT, Utilidades.readString());
+
+				break;
+			case 3:
+
+				// Quantity of contacts in Addres Book
+				if (addressBookArrayOUT.isEmpty()) {
+					System.out.println("No existen contactos todavia!");
+				} else {
+					System.out
+					.println("La cantidad de contactos en la agenda es: "
+							+ addressBookArrayOUT.size());
+				}
+				break;
+			case 4:
+
+				System.out.println("Mostrar agendas: ");
+				System.out.println("1. Agenda existente");
+				System.out.println("2. Agenda importada");
+				System.out.print("Introduce opción: ");
+				switch (Utilidades.readInt()) {
+				case 1:
+
+					showAllFriends(addressBookArrayOUT);
+					break;
+				case 2:
+					showAllFriends(addressBookArrayIN);
+					break;
+
+				default:
+					System.err.println("Opción incorrecta!");
+					break;
+				}
+
+				break;
+			case 5:
+				// Sort in the main ArrayList if the given contact exists or no
+				// If it exists, then modify with the new information
+				actionMenu("Editar", addressBookArrayOUT);
+				editFriend(Utilidades.readString(), addressBookArrayOUT);
+				break;
+			case 6:
+				actionMenu("borrar", addressBookArrayOUT);
+				deleteFriend(Utilidades.readString(), addressBookArrayOUT);
+				break;
+			case 7:
+				Utilidades.showInfo("Exportar");
+				System.out.println();
+				exportAddresBookFile(addressBookArrayOUT);
+				System.out.println("Exportado!");
+				break;
+			case 8:
+
+				Utilidades.showInfo("Importar");
+				System.out.println();
+				System.out.print("Introduzca ruta origen del fichero: ");
+				String inputPATH = Utilidades.readString();
+				// Utilidades.flush();
+
+				FileInputStream inputFile;
+
+				try {
+					inputFile = new FileInputStream(inputPATH);
+					addressBookArrayIN = importAddresBookFile(inputFile);
+					Utilidades.showInfo("Importado!");
+					System.out.println();
+				} catch (FileNotFoundException e) {
+					System.err
+					.println("El fichero que se intenta importar no existe!");
+				}
+
+				break;
+
 			default:
 				Utilidades.showInfo("Opción incorrecta!");
 				break;

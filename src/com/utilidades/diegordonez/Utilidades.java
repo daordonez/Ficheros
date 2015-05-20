@@ -47,7 +47,9 @@ public class Utilidades {
 			// If dosn´t exists, then create it
 			try {
 				if (fil.createNewFile()) {
-					showInfo("Ficherocreado exitosamente!");
+					showInfo("Fichero creado exitosamente!");
+					System.out.println();
+					isCreated = true;
 				}
 			} catch (IOException e) {
 				showInfo("Error de comprobación de fichero");
@@ -66,11 +68,10 @@ public class Utilidades {
 		boolean isString = false;
 		do {
 			try {
-				str = tec.nextLine();
+				str = tec.next();
 				isString = true;
 			} catch (InputMismatchException e) {
 				showInfo("Caracter no valido. Debe ser cadena");
-				flush();
 			}
 		} while (isString == false);
 		return str;
